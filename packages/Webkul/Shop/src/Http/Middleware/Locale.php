@@ -1,47 +1,103 @@
 <?php
 
-namespace Webkul\Shop\Http\Middleware;
+namespace Webkul\Core\Concerns;
 
-use Closure;
-use Webkul\Core\Repositories\LocaleRepository;
+use Webkul\Core\Contracts\Currency;
+use Webkul\Core\Enums\CurrencyPositionEnum;
 
-class Locale
+trait CurrencyFormatter
 {
     /**
-     * Create a middleware instance.
-     *
-     * @param  \Webkul\Core\Repositories\LocaleRepository  $localeRepository
-     * @return void
+     * Format currency.
      */
-    public function __construct(protected LocaleRepository $localeRepository)
+    public function formatCurrency(?float $price, Currency $currency): string
     {
+        if ($currency->currency_position) {
+            return $this->useCustomCurrencyFormatter($price, $currency);
+        }
+
+        return $this->useDefaultCurrencyFormatter($price, $currency);
     }
 
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
+     * Use default formatter.
      */
-    public function handle($request, Closure $next)
+    public function useDefaultCurrencyFormatter(?float $price, Currency $currency): string
     {
-        if ($localeCode = core()->getRequestedLocaleCode('locale', false)) {
-            if ($this->localeRepository->findOneByField('code', $localeCode)) {
-                app()->setLocale($localeCode);
+        $formatter = new \NumberFormatter(app()->getLocale(), \NumberFormatter::CURRENCY);
 
-                session()->put('locale', $localeCode);
+        if ($currency->symbol) {
+            /**
+             * If, somehow, the currency symbol mentioned matches with the user-defined symbol,
+             * then we can simply use the 'formatCurrency' method.
+             */
+            if ($this->currencySymbol($currency) == $currency->symbol) {
+                return $formatter->formatCurrency($price, $currency->code);
             }
-        } else {
-            if ($localeCode = session()->get('locale')) {
-                app()->setLocale($localeCode);
-            } else {
-                app()->setLocale(core()->getDefaultChannelLocaleCode());
-            }
+
+            $formatter->setSymbol(\NumberFormatter::CURRENCY_SYMBOL, $currency->symbol);
+
+            return $formatter->format($price);
         }
 
-        unset($request['locale']);
+        return $formatter->formatCurrency($price, $currency->code);
+    }
 
-        return $next($request);
+    /**
+     * Use custom formatter.
+     */
+    public function useCustomCurrencyFormatter(?float $price, Currency $currency): string
+    {
+        $formatter = new \NumberFormatter(app()->getLocale(), \NumberFormatter::CURRENCY);
+
+        $formatter->setSymbol(\NumberFormatter::CURRENCY_SYMBOL, '');
+
+        $formatter->setAttribute(\NumberFormatter::FRACTION_DIGITS, $currency->decimal ?? 2);
+
+        $formattedCurrency = preg_replace('/^\s+|\s+$/u', '', $formatter->format($price));
+
+        if (! empty($currency->group_separator)) {
+            $formattedCurrency = str_replace(
+                $formatter->getSymbol(\NumberFormatter::GROUPING_SEPARATOR_SYMBOL),
+                $currency->group_separator,
+                $formattedCurrency
+            );
+        }
+
+        if (
+            $currency->decimal > 0
+            && ! empty($currency->decimal_separator)
+        ) {
+            $formattedCurrency = str_replace(
+                $formatter->getSymbol(\NumberFormatter::DECIMAL_SEPARATOR_SYMBOL),
+                $currency->decimal_separator,
+                $formattedCurrency
+            );
+        }
+
+        $symbol = ! empty($currency->symbol)
+            ? $currency->symbol
+            : $currency->code;
+
+        return match ($currency->currency_position) {
+            CurrencyPositionEnum::LEFT->value             => $symbol.$formattedCurrency,
+            CurrencyPositionEnum::LEFT_WITH_SPACE->value  => $symbol.' '.$formattedCurrency,
+            CurrencyPositionEnum::RIGHT->value            => $formattedCurrency.$symbol,
+            CurrencyPositionEnum::RIGHT_WITH_SPACE->value => $formattedCurrency.' '.$symbol,
+        };
+    }
+
+    /**
+     * Return currency symbol from currency code.
+     *
+     * @param  string|\Webkul\Core\Contracts\Currency  $currency
+     */
+    public function currencySymbol($currency): string
+    {
+        $code = $currency instanceof \Webkul\Core\Contracts\Currency ? $currency->code : $currency;
+
+        $formatter = new \NumberFormatter(app()->getLocale().'@currency='.$code, \NumberFormatter::CURRENCY);
+
+        return $formatter->getSymbol(\NumberFormatter::CURRENCY_SYMBOL);
     }
 }
