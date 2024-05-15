@@ -9,12 +9,12 @@
     "license": "MIT",
     "require": {
         "ezyang/htmlpurifier":"^4.16",
-        "php": "^8.3.3",
+        "php": "^8.2.12",
         "ext-calendar": "*",
         "ext-curl": "*",
         "ext-intl": "*",
         "ext-mbstring": "*",
-        "ext-openssl": "*",
+        
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "ext-tokenizer": "*",
@@ -48,7 +48,7 @@
         "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {
-        "bagisto/laravel-datafaker": "^2.0@alpha",
+        "bagisto/laravel-datafaker": "^2.0 || ^1.5",
         "barryvdh/laravel-debugbar": "^3.8",
         "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.8",
