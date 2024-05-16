@@ -218,7 +218,7 @@ class Core
      
     public function getDefaultLocaleCodeFromDefaultChannel(): string
     {
-        return $this->getDefaultChannel()->default_locale->code;
+        return $this->getDefaultChannel(null)->default_locale->code;
     }
 
     /**
