@@ -214,11 +214,9 @@ class Core
     /**
      * Returns default locale code from default channel.
      */
-
-     
     public function getDefaultLocaleCodeFromDefaultChannel(): string
     {
-        return $this->getDefaultChannel(null)->default_locale->code;
+        return $this->getDefaultChannel()->default_locale->code;
     }
 
     /**
