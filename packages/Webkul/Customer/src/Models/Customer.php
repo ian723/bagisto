@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Laravel\Sanctum\HasApiTokens;
 use Shetabit\Visitor\Traits\Visitor;
 use Webkul\Checkout\Models\CartProxy;
 use Webkul\Core\Models\SubscribersListProxy;
@@ -17,10 +18,11 @@ use Webkul\Product\Models\ProductReviewProxy;
 use Webkul\Sales\Models\OrderProxy;
 use Webkul\Customer\Models\CustomerNoteProxy;
 use Webkul\Sales\Models\InvoiceProxy;
+// use Laravel\Sanctum\HasApiTokens;
 
 class Customer extends Authenticatable implements CustomerContract
 {
-    use HasFactory, Notifiable, Visitor;
+    use HasFactory, Notifiable, Visitor, HasApiTokens;
 
     /**
      * The table associated with the model.
